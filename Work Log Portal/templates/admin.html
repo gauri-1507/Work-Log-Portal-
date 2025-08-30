@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      display: flex;
+      min-height: 100vh;
+    }
+    #sidebar-wrapper {
+      width: 250px;
+      background-color: #f8f9fa;
+      border-right: 1px solid #dee2e6;
+    }
+    .sidebar-heading {
+      background-color: #011f40;
+      color: white;
+    }
+    #page-content-wrapper {
+      flex: 1;
+      padding: 20px;
+    }
+    .section {
+      display: none;
+    }
+    .active-section {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  
+  <div id="sidebar-wrapper">
+    <div class="sidebar-heading p-4 fw-bold">ADMIN PANEL</div>
+    <div class="list-group list-group-flush">
+      <a href="#" class="list-group-item list-group-item-action" onclick="showSection('dashboard')">Dashboard</a>
+      <a href="#" class="list-group-item list-group-item-action" onclick="showSection('assign')">Assign Work</a>
+      <a href="#" class="list-group-item list-group-item-action" onclick="showSection('submissions')">Employee Submissions</a>
+      <a href="/logout" class="list-group-item list-group-item-action text-danger">Logout</a>
+    </div>
+  </div>
+  
+
+  <div id="page-content-wrapper">
+    <div id="dashboard" class="section {% if not show_submissions %}active-section{% endif %}">
+      <h2>Welcome to Admin Dashboard</h2>
+      
+<div class="container mt-5">
+  
+
+  
+  <div class="row text-center mb-4">
+    <div class="col-md-4">
+      <div class="card bg-success text-white p-3">
+        <h5>Completed Projects</h5>
+        <h3 id="completed-count">54</h3>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-warning text-dark p-3">
+        <h5>Ongoing Projects</h5>
+        <h3 id="ongoing-count">25</h3>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-info text-white p-3">
+        <h5> Pending Projects</h5>
+        <h3 id="pending-projects">12</h3>
+      </div>
+    </div>
+  </div>
+
+  
+  <canvas id="projectChart" height="85"></canvas>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('projectChart').getContext('2d');
+  const projectChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Completed', 'Ongoing', 'Pending Projects'],
+      datasets: [{
+        label: 'Project Stats',
+        data: [54, 25, 12],
+        backgroundColor: ['#28a745', '#ffc107', '#17a2b8'],
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      onClick: function (e, items) {
+        if (items.length > 0) {
+          const label = this.data.labels[items[0].index];
+          alert(`You clicked on ${label}`);
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+</div>
+
+    <!-- Assign Work Section -->
+    <div id="assign" class="section">
+      <h2>Assign Work</h2>
+      <form method="POST" action="/admin/assign" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="employee_id" class="form-label">Employee ID</label>
+          <input type="text" class="form-control" id="employee_id" name="employee_id" required>
+        </div>
+        <div class="mb-3">
+            <label for="project_name" class="form-label">Project Name</label>
+            <input type="text" class="form-control" id="project_name" name="project_name" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="description" class="form-label">Project Description</label>
+          <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="due_date" class="form-label">Due Date</label>
+          <input type="date" class="form-control" id="due_date" name="due_date" required>
+        </div>
+        <div class="mb-3">
+          <label for="project_file" class="form-label">Attach File (optional)</label>
+          <input class="form-control" type="file" id="project_file" name="project_file">
+        </div>
+        <button type="submit" class="btn btn-primary">Assign</button>
+      </form>
+    </div>
+    
+
+
+    <!-- Employee Submissions Section -->
+    <div id="submissions" class="section {% if show_submissions %}active-section{% endif %}">
+      <h2>Employee Submissions</h2>
+
+      <!-- Filters -->
+      <form method="GET" action="/admin" class="row g-3 mb-4">
+        <div class="col-md-3">
+          <input type="text" class="form-control" name="employee_id" placeholder="Employee ID">
+        </div>
+        <div class="col-md-3">
+          <input type="text" class="form-control" name="project" placeholder="Project Name">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" name="status">
+            <option value="">All Statuses</option>
+            <option value="Complete">Complete</option>
+            <option value="On Going">On Going</option>
+            <option value="Pending After The Due Date">Pending After The Due Date</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <input type="date" class="form-control" name="date">
+        </div>
+        
+        <div class="col-12">
+            <button type="submit" class="btn" style="background-color: #011f40ee; color: white;">Apply Filters</button>
+        </div>
+
+      </form> 
+
+      <!-- Submissions Table -->
+      <table class="table table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 15%;">Employee ID</th>
+            <th style="width: 20%;">Project Name</th>
+            <th style="width: 35%;">Work Done</th>
+            <th style="width: 15%;">Status</th>
+            <th style="width: 15%;">Attached File</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          {% for submission in submissions %}
+<tr>
+  <td>{{ submission['employee_id'] }}</td>
+  <td>{{ submission['project_name'] }}</td>
+  <td>{{ submission['work_done'] }}</td>
+  <td>{{ submission['status'] }}</td>
+  <td>
+    {% if submission['file_path'] %}
+      <a href="{{ url_for('static', filename='uploads/' + submission['file_path']) }}" target="_blank">Download</a>
+    {% else %}
+      No file
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+  <script>
+    function showSection(sectionId) {
+      const sections = document.querySelectorAll('.section');
+      sections.forEach(sec => sec.classList.remove('active-section'));
+      document.getElementById(sectionId).classList.add('active-section');
+    }
+  </script>
+
+</body>
+</html>
